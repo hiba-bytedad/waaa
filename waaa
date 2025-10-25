@@ -1,0 +1,1101 @@
+function App() {
+  const [currentScreen, setCurrentScreen] = React.useState('welcome');
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [braceletConnected, setBraceletConnected] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState('home');
+  const [dataView, setDataView] = React.useState('week');
+  const [dataCategory, setDataCategory] = React.useState('heart');
+  const [showSuccess, setShowSuccess] = React.useState(false);
+  const [allowEmergencyAccess, setAllowEmergencyAccess] = React.useState(false);
+
+  // State for My Medical File sub-pages
+  const [medicalFileSubPage, setMedicalFileSubPage] = React.useState('overview'); // 'overview', 'tests', 'prescriptions', 'hospitalHistory', 'addData'
+  const [selectedTest, setSelectedTest] = React.useState(null);
+  const [selectedPrescription, setSelectedPrescription] = React.useState(null);
+  const [selectedVisit, setSelectedVisit] = React.useState(null);
+
+  // State for Shop Page
+  const [shopScreen, setShopScreen] = React.useState('selection'); // 'selection', 'payment', 'confirmation'
+  const [selectedBraceletColor, setSelectedBraceletColor] = React.useState('green');
+  const [paymentOption, setPaymentOption] = React.useState('card');
+  const [medibandCode, setMedibandCode] = React.useState('');
+
+  // State for Add Data Page
+  const [addDataStep, setAddDataStep] = React.useState(1); // 1: Choose Role, 2: Add Info, 3: Confirm
+  const [addDataRole, setAddDataRole] = React.useState(null); // 'patient', 'doctor'
+  const [patientFormData, setPatientFormData] = React.useState({
+    nationalId: '',
+    fullName: '',
+    infoType: '',
+    description: '',
+    file: null,
+  });
+  const [doctorFormData, setDoctorFormData] = React.useState({
+    doctorName: '',
+    licenseNumber: '',
+    clinicName: '',
+    patientNationalId: '',
+    infoType: '',
+    details: '',
+    file: null,
+  });
+  const [addDataConfirmationMessage, setAddDataConfirmationMessage] = React.useState('');
+
+  // State for Assign Personal Info Screen
+  const [personalInfo, setPersonalInfo] = React.useState({
+    cardId: '',
+    fullName: '',
+    email: '',
+    phone: '',
+  });
+
+  // Dummy Data for Medical File
+  const medicalTests = [
+    { id: 1, name: 'Blood Test', date: '2023-10-20', doctor: 'Dr. Smith', lab: 'City Lab', results: { hemoglobin: '14.5 g/dL (Normal)', cholesterol: '180 mg/dL (Normal)' }, chart: 'normal' },
+    { id: 2, name: 'Diabetes Test', date: '2023-09-10', doctor: 'Dr. Jones', lab: 'Health Diagnostics', results: { glucose: '110 mg/dL (Abnormal)', hba1c: '6.2% (Abnormal)' }, chart: 'abnormal' },
+    { id: 3, name: 'Cholesterol Test', date: '2023-07-01', doctor: 'Dr. Lee', lab: 'City Lab', results: { ldl: '100 mg/dL (Normal)', hdl: '50 mg/dL (Normal)' }, chart: 'normal' },
+    { id: 4, name: 'X-Ray (Chest)', date: '2023-08-15', doctor: 'Dr. Brown', lab: 'General Hospital', results: { findings: 'No acute abnormalities.' }, chart: 'normal' },
+    { id: 5, name: 'MRI (Knee)', date: '2023-06-05', doctor: 'Dr. White', lab: 'Advanced Imaging', results: { findings: 'Minor meniscus tear.' }, chart: 'abnormal' },
+  ];
+
+  const prescriptions = [
+    { id: 1, name: 'Amoxicillin', dosage: '500mg', frequency: '3 times a day', duration: '7 days', doctor: 'Dr. Smith', completed: false },
+    { id: 2, name: 'Lisinopril', dosage: '10mg', frequency: 'Once a day', duration: 'Ongoing', doctor: 'Dr. Jones', completed: false },
+    { id: 3, name: 'Ibuprofen', dosage: '200mg', frequency: 'As needed', duration: 'Short-term', doctor: 'Dr. Lee', completed: true },
+  ];
+
+  const hospitalHistory = [
+    { id: 1, date: '2023-10-22', doctor: 'Dr. Smith', specialty: 'General Medicine', diagnosis: 'Common Cold', treatments: 'Rest, Fluids', documents: ['Blood Test'] },
+    { id: 2, date: '2023-09-10', doctor: 'Dr. Jones', specialty: 'Endocrinology', diagnosis: 'Pre-diabetes', treatments: 'Dietary changes, exercise plan', documents: ['Diabetes Test'] },
+    { id: 3, date: '2023-05-01', doctor: 'Dr. Brown', specialty: 'Orthopedics', diagnosis: 'Knee Pain', treatments: 'Physical Therapy', documents: ['MRI (Knee)'] },
+  ];
+
+  // Welcome Screen
+  const WelcomeScreen = () => (
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center p-6">
+      <div className="text-center mb-12">
+        <img src="Gemini_Generated_Image_mn6rrkmn6rrkmn6r.png" alt="Mediband Logo" className="mx-auto mb-6" />
+      </div>
+    
+      <div className="w-full max-w-sm space-y-4">
+        <button 
+          onClick={() => { setIsLoggedIn(true); setCurrentScreen(braceletConnected ? 'dashboard' : 'activation'); }}
+          className="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition shadow-lg"
+        >
+          Log In
+        </button>
+        <button 
+          onClick={() => { setCurrentScreen('assignPersonalInfo'); }} // Modified to go to AssignPersonalInfoScreen
+          className="w-full bg-green-400 text-white py-4 rounded-xl font-semibold hover:bg-green-500 transition shadow-lg"
+        >
+          Sign Up or Get Yours
+        </button>
+        <button 
+          onClick={() => { setIsLoggedIn(false); setCurrentScreen('dashboard'); }}
+          className="w-full bg-gray-200 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-300 transition"
+        >
+          Continue as Guest
+        </button>
+      </div>
+    </div>
+  );
+
+  // Assign Personal Info Screen
+  const AssignPersonalInfoScreen = () => {
+    const handleChange = (e) => {
+      const { name, value } = e.target;
+      setPersonalInfo(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = () => {
+      // Here you would typically save this info to a backend or local storage
+      console.log("Personal Info Submitted:", personalInfo);
+      setIsLoggedIn(true); // Assume user is logged in after providing info
+      setCurrentScreen('dashboard');
+      setActiveTab('shop');
+      setShopScreen('selection'); // Ensure shop starts at selection
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 p-6">
+        <button onClick={() => setCurrentScreen('welcome')} className="text-green-500 mb-6">
+          <i className="fas fa-arrow-left mr-2"></i>Back
+        </button>
+      
+        <div className="max-w-md mx-auto mt-12">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Your Personal Information</h2>
+            <p className="text-gray-600">Please provide your details to get started with Mediband.</p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-lg">
+            <input 
+              type="text" 
+              name="cardId"
+              placeholder="Mediband Card ID (e.g., AD123456)"
+              value={personalInfo.cardId}
+              onChange={handleChange}
+              className="w-full border-2 border-gray-300 rounded-xl p-4 mb-4 focus:border-green-500 outline-none"
+              required
+            />
+            <input 
+              type="text" 
+              name="fullName"
+              placeholder="Full Name"
+              value={personalInfo.fullName}
+              onChange={handleChange}
+              className="w-full border-2 border-gray-300 rounded-xl p-4 mb-4 focus:border-green-500 outline-none"
+              required
+            />
+            <input 
+              type="email" 
+              name="email"
+              placeholder="Email Address"
+              value={personalInfo.email}
+              onChange={handleChange}
+              className="w-full border-2 border-gray-300 rounded-xl p-4 mb-4 focus:border-green-500 outline-none"
+              required
+            />
+            <input 
+              type="tel" 
+              name="phone"
+              placeholder="Phone Number"
+              value={personalInfo.phone}
+              onChange={handleChange}
+              className="w-full border-2 border-gray-300 rounded-xl p-4 mb-6 focus:border-green-500 outline-none"
+              required
+            />
+            <button 
+              onClick={handleSubmit}
+              className="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition shadow-lg"
+            >
+              Continue to Shop
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Activation Screen
+  const ActivationScreen = () => (
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 p-6">
+      <button onClick={() => setCurrentScreen('welcome')} className="text-green-500 mb-6">
+        <i className="fas fa-arrow-left mr-2"></i>Back
+      </button>
+    
+      <div className="max-w-md mx-auto mt-12">
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+            <img src="Bracelet.png" alt="Bracelet Icon" className="w-12 h-12" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Connect Your Mediband</h2>
+          <p className="text-gray-600">Please enter your National ID to continue.</p>
+        </div>
+
+        {!showSuccess ? (
+          <div>
+            <input 
+              type="text" 
+              placeholder="Enter your card ID (e.g., AD123456)"
+              className="w-full border-2 border-gray-300 rounded-xl p-4 mb-4 focus:border-green-500 outline-none"
+            />
+            <div className="text-center my-4 text-gray-600">Or</div>
+            <button 
+              onClick={() => alert('QR Scanner functionality would be implemented here!')}
+              className="w-full bg-green-400 text-white py-4 rounded-xl font-semibold hover:bg-green-500 transition flex items-center justify-center"
+            >
+              <i className="fas fa-qrcode mr-2"></i>
+              Scan QR in your band!
+            </button>
+            <button 
+              onClick={() => { setShowSuccess(true); setTimeout(() => { setBraceletConnected(true); setCurrentScreen('dashboard'); }, 2000); }}
+              className="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition mt-4"
+            >
+              Connect Device
+            </button>
+          
+            <div className="text-center mt-8">
+              <p className="text-gray-600 mb-3">Don't have a Mediband yet?</p>
+              <button 
+                onClick={() => { setCurrentScreen('assignPersonalInfo'); }} // Modified to go to AssignPersonalInfoScreen
+                className="text-teal-500 font-semibold hover:underline"
+              >
+                Buy a Mediband →
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-24 h-24 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse">
+              <i className="fas fa-check text-green-500 text-4xl"></i>
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Successfully Connected!</h3>
+            <p className="text-gray-600">Redirecting to dashboard...</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Emergency Access Page
+  const EmergencyAccessPage = () => (
+    <div className="min-h-screen bg-red-50 p-6">
+      <button onClick={() => setCurrentScreen('dashboard')} className="text-red-500 mb-6">
+        <i className="fas fa-arrow-left mr-2"></i>Back to Dashboard
+      </button>
+    
+      <div className="max-w-md mx-auto mt-12 text-center">
+        <h2 className="text-3xl font-bold text-red-700 mb-6">🚨 Emergency Access</h2>
+      
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Essential Data</h3>
+          <div className="text-left space-y-2 text-gray-700">
+            <p><strong>Name:</strong> John Doe</p>
+            <p><strong>Blood Type:</strong> A+</p>
+            <p><strong>Allergies:</strong> Penicillin, Peanuts</p>
+            <p><strong>Chronic Diseases:</strong> Asthma</p>
+            <p><strong>Emergency Contact:</strong> Jane Doe (555-123-4567)</p>
+          </div>
+          <button className="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition mt-6">
+            <i className="fas fa-phone mr-2"></i>Call Emergency Contact
+          </button>
+        </div>
+
+        <button className="w-full bg-red-600 text-white py-4 rounded-xl font-semibold hover:bg-red-700 transition shadow-lg">
+          <i className="fas fa-bell mr-2"></i>Send Alert (Hospital/Doctor)
+        </button>
+      </div>
+    </div>
+  );
+
+  // My Medical File Sub-pages
+  const MedicalTestsSection = () => (
+    <div className="p-6">
+      <button onClick={() => setMedicalFileSubPage('overview')} className="text-green-500 mb-6">
+        <i className="fas fa-arrow-left mr-2"></i>Back to Medical File
+      </button>
+      <h3 className="text-2xl font-bold text-gray-800 mb-6">Medical Tests 🧪</h3>
+      <div className="space-y-4">
+        {medicalTests.map(test => (
+          <div key={test.id} onClick={() => setSelectedTest(test)} className="bg-white rounded-2xl p-5 shadow-md cursor-pointer hover:bg-gray-50 transition">
+            <p className="font-semibold text-gray-800">{test.name}</p>
+            <p className="text-sm text-gray-600">{test.date} - {test.doctor}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const TestDetailPage = () => (
+    <div className="p-6">
+      <button onClick={() => setSelectedTest(null)} className="text-green-500 mb-6">
+        <i className="fas fa-arrow-left mr-2"></i>Back to Tests
+      </button>
+      <h3 className="text-2xl font-bold text-gray-800 mb-6">{selectedTest.name} Details</h3>
+      <div className="bg-white rounded-2xl p-6 shadow-md space-y-3">
+        <p><strong>Test Date:</strong> {selectedTest.date}</p>
+        <p><strong>Doctor/Lab:</strong> {selectedTest.doctor} / {selectedTest.lab}</p>
+        <div>
+          <p className="font-semibold">Results:</p>
+          {Object.entries(selectedTest.results).map(([key, value]) => (
+            <p key={key} className="ml-4">{key.charAt(0).toUpperCase() + key.slice(1)}: {value}</p>
+          ))}
+        </div>
+        <div className="flex items-center">
+          <p className="font-semibold mr-2">Indicator:</p>
+          <span className={`px-3 py-1 rounded-full text-white text-xs font-semibold ${selectedTest.chart === 'normal' ? 'bg-green-500' : 'bg-red-500'}`}>
+            {selectedTest.chart.charAt(0).toUpperCase() + selectedTest.chart.slice(1)}
+          </span>
+        </div>
+        <button className="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition mt-4">
+          <i className="fas fa-download mr-2"></i>Download PDF Report
+        </button>
+      </div>
+    </div>
+  );
+
+  const PrescriptionsSection = () => (
+    <div className="p-6">
+      <button onClick={() => setMedicalFileSubPage('overview')} className="text-green-500 mb-6">
+        <i className="fas fa-arrow-left mr-2"></i>Back to Medical File
+      </button>
+      <h3 className="text-2xl font-bold text-gray-800 mb-6">Prescriptions 💊</h3>
+      <div className="space-y-4">
+        {prescriptions.map(prescription => (
+          <div key={prescription.id} onClick={() => setSelectedPrescription(prescription)} className="bg-white rounded-2xl p-5 shadow-md cursor-pointer hover:bg-gray-50 transition">
+            <p className="font-semibold text-gray-800">{prescription.name}</p>
+            <p className="text-sm text-gray-600">{prescription.dosage}, {prescription.frequency}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const PrescriptionDetailPage = () => (
+    <div className="p-6">
+      <button onClick={() => setSelectedPrescription(null)} className="text-green-500 mb-6">
+        <i className="fas fa-arrow-left mr-2"></i>Back to Prescriptions
+      </button>
+      <h3 className="text-2xl font-bold text-gray-800 mb-6">{selectedPrescription.name} Details</h3>
+      <div className="bg-white rounded-2xl p-6 shadow-md space-y-3">
+        <p><strong>Medicine Name:</strong> {selectedPrescription.name}</p>
+        <p><strong>Dosage & Frequency:</strong> {selectedPrescription.dosage}, {selectedPrescription.frequency}</p>
+        <p><strong>Duration:</strong> {selectedPrescription.duration}</p>
+        <p><strong>Prescribing Doctor:</strong> {selectedPrescription.doctor}</p>
+        <div className="flex space-x-4 mt-4">
+          <button className="flex-1 bg-green-500 text-white py-3 rounded-xl font-semibold hover:bg-green-600 transition">
+            <i className="fas fa-check-circle mr-2"></i>Mark as Completed
+          </button>
+          <button className="flex-1 bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition">
+            <i className="fas fa-info-circle mr-2"></i>View Refill Info
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const HospitalHistorySection = () => (
+    <div className="p-6">
+      <button onClick={() => setMedicalFileSubPage('overview')} className="text-green-500 mb-6">
+        <i className="fas fa-arrow-left mr-2"></i>Back to Medical File
+      </button>
+      <h3 className="text-2xl font-bold text-gray-800 mb-6">Hospital History 🏥</h3>
+      <div className="space-y-4">
+        {hospitalHistory.map(visit => (
+          <div key={visit.id} onClick={() => setSelectedVisit(visit)} className="bg-white rounded-2xl p-5 shadow-md cursor-pointer hover:bg-gray-50 transition">
+            <p className="font-semibold text-gray-800">{visit.date} - {visit.doctor} ({visit.specialty})</p>
+            <p className="text-sm text-gray-600">{visit.diagnosis}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const HospitalVisitDetailPage = () => (
+    <div className="p-6">
+      <button onClick={() => setSelectedVisit(null)} className="text-green-500 mb-6">
+        <i className="fas fa-arrow-left mr-2"></i>Back to Hospital History
+      </button>
+      <h3 className="text-2xl font-bold text-gray-800 mb-6">Consultation Details</h3>
+      <div className="bg-white rounded-2xl p-6 shadow-md space-y-3">
+        <p><strong>Date:</strong> {selectedVisit.date}</p>
+        <p><strong>Doctor:</strong> {selectedVisit.doctor} ({selectedVisit.specialty})</p>
+        <p><strong>Diagnosis Summary:</strong> {selectedVisit.diagnosis}</p>
+        <p><strong>Treatments/Tests Ordered:</strong> {selectedVisit.treatments}</p>
+        {selectedVisit.documents && selectedVisit.documents.length > 0 && (
+          <button className="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition mt-4">
+            <i className="fas fa-file-alt mr-2"></i>View Related Documents
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // Add Data Page
+  const AddDataPage = () => {
+    const handlePatientFormChange = (e) => {
+      const { name, value, files } = e.target;
+      setPatientFormData(prev => ({
+        ...prev,
+        [name]: files ? files[0] : value,
+      }));
+    };
+
+    const handleDoctorFormChange = (e) => {
+      const { name, value, files } = e.target;
+      setDoctorFormData(prev => ({
+        ...prev,
+        [name]: files ? files[0] : value,
+      }));
+    };
+
+    const handleSubmitPatientData = () => {
+      // Simulate data submission
+      console.log("Patient Data Submitted:", patientFormData);
+      setAddDataConfirmationMessage("Your new data has been sent for verification and added to your Mediband file.");
+      setAddDataStep(3);
+    };
+
+    const handleSubmitDoctorData = () => {
+      // Simulate data submission
+      console.log("Doctor Data Submitted:", doctorFormData);
+      setAddDataConfirmationMessage("Data successfully added to the patient’s Mediband record.");
+      setAddDataStep(3);
+    };
+
+    const renderStepContent = () => {
+      switch (addDataStep) {
+        case 1: // Choose Role
+          return (
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-800 mb-6">Step 1: Choose Your Role</h3>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => { setAddDataRole('patient'); setAddDataStep(2); }}
+                  className={`flex flex-col items-center p-6 rounded-xl shadow-md transition ${addDataRole === 'patient' ? 'bg-blue-100 border-2 border-blue-500' : 'bg-white hover:bg-gray-50'}`}
+                >
+                  <i className="fas fa-user text-4xl text-blue-500 mb-3"></i>
+                  <span className="font-semibold text-gray-700">I'm a Patient</span>
+                </button>
+                <button
+                  onClick={() => { setAddDataRole('doctor'); setAddDataStep(2); }}
+                  className={`flex flex-col items-center p-6 rounded-xl shadow-md transition ${addDataRole === 'doctor' ? 'bg-blue-100 border-2 border-blue-500' : 'bg-white hover:bg-gray-50'}`}
+                >
+                  <i className="fas fa-user-md text-4xl text-blue-500 mb-3"></i>
+                  <span className="font-semibold text-gray-700">I'm a Doctor</span>
+                </button>
+              </div>
+            </div>
+          );
+        case 2: // Add Information Form
+          return (
+            <div>
+              <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Step 2: Add Information</h3>
+              {addDataRole === 'patient' && (
+                <form onSubmit={(e) => { e.preventDefault(); handleSubmitPatientData(); }} className="space-y-4">
+                  <input type="text" name="nationalId" placeholder="National ID Number" value={patientFormData.nationalId} onChange={handlePatientFormChange} className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none" required />
+                  <input type="text" name="fullName" placeholder="Full Name" value={patientFormData.fullName} onChange={handlePatientFormChange} className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none" required />
+                  <select name="infoType" value={patientFormData.infoType} onChange={handlePatientFormChange} className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none bg-white" required>
+                    <option value="">Type of Information to Add</option>
+                    <option value="medicalTest">Medical Test</option>
+                    <option value="allergy">Allergy</option>
+                    <option value="prescription">Prescription</option>
+                    <option value="hospitalVisit">Hospital Visit</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <textarea name="description" placeholder="Description / Details" value={patientFormData.description} onChange={handlePatientFormChange} rows="4" className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none"></textarea>
+                  <label className="block text-gray-700 font-semibold mb-2">Upload File (Optional)</label>
+                  <input type="file" name="file" onChange={handlePatientFormChange} className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none bg-white" />
+                  <button type="submit" className="w-full bg-blue-500 text-white py-4 rounded-xl font-semibold hover:bg-blue-600 transition shadow-lg">
+                    Submit Information
+                  </button>
+                </form>
+              )}
+              {addDataRole === 'doctor' && (
+                <form onSubmit={(e) => { e.preventDefault(); handleSubmitDoctorData(); }} className="space-y-4">
+                  <input type="text" name="doctorName" placeholder="Doctor's Name" value={doctorFormData.doctorName} onChange={handleDoctorFormChange} className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none" required />
+                  <input type="text" name="licenseNumber" placeholder="Doctor ID or License Number" value={doctorFormData.licenseNumber} onChange={handleDoctorFormChange} className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none" required />
+                  <input type="text" name="clinicName" placeholder="Hospital / Clinic Name" value={doctorFormData.clinicName} onChange={handleDoctorFormChange} className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none" required />
+                  <input type="text" name="patientNationalId" placeholder="Patient National ID" value={doctorFormData.patientNationalId} onChange={handleDoctorFormChange} className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none" required />
+                  <select name="infoType" value={doctorFormData.infoType} onChange={handleDoctorFormChange} className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none bg-white" required>
+                    <option value="">Type of Information to Add</option>
+                    <option value="medicalTest">Medical Test</option>
+                    <option value="diagnosis">Diagnosis</option>
+                    <option value="prescription">Prescription</option>
+                    <option value="allergyUpdate">Allergy Update</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <textarea name="details" placeholder="Details or Notes" value={doctorFormData.details} onChange={handleDoctorFormChange} rows="4" className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none"></textarea>
+                  <label className="block text-gray-700 font-semibold mb-2">Upload File / Report (Optional)</label>
+                  <input type="file" name="file" onChange={handleDoctorFormChange} className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-blue-500 outline-none bg-white" />
+                  <button type="submit" className="w-full bg-blue-500 text-white py-4 rounded-xl font-semibold hover:bg-blue-600 transition shadow-lg">
+                    Submit Update
+                  </button>
+                </form>
+              )}
+            </div>
+          );
+        case 3: // Confirmation
+          return (
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-800 mb-6">Step 3: Confirmation</h3>
+              <div className="w-24 h-24 bg-green-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+                <i className="fas fa-check-circle text-green-500 text-5xl"></i>
+              </div>
+              <p className="text-gray-700 text-lg mb-8">{addDataConfirmationMessage}</p>
+              <button
+                onClick={() => { setMedicalFileSubPage('overview'); setAddDataStep(1); setAddDataRole(null); }}
+                className="w-full max-w-sm bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition shadow-lg"
+              >
+                Done
+              </button>
+            </div>
+          );
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-blue-50 p-6">
+        <button onClick={() => { setMedicalFileSubPage('overview'); setAddDataStep(1); setAddDataRole(null); }} className="text-blue-500 mb-6">
+          <i className="fas fa-arrow-left mr-2"></i>Back to Medical File
+        </button>
+        <div className="max-w-md mx-auto mt-8 bg-white rounded-2xl p-6 shadow-lg">
+          <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">Add New Data</h2>
+        
+          <div className="flex justify-between items-center mb-8">
+            <div className={`flex-1 text-center ${addDataStep === 1 ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1 ${addDataStep >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>1</div>
+              <span className="text-sm">Choose Role</span>
+            </div>
+            <div className="flex-1 border-t-2 border-gray-200 mx-2"></div>
+            <div className={`flex-1 text-center ${addDataStep === 2 ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1 ${addDataStep >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>2</div>
+              <span className="text-sm">Add Info</span>
+            </div>
+            <div className="flex-1 border-t-2 border-gray-200 mx-2"></div>
+            <div className={`flex-1 text-center ${addDataStep === 3 ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1 ${addDataStep >= 3 ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>3</div>
+              <span className="text-sm">Confirm</span>
+            </div>
+          </div>
+
+          {renderStepContent()}
+        </div>
+      </div>
+    );
+  };
+
+  // My Medical File Page
+  const MyMedicalFilePage = () => {
+    const renderSubPage = () => {
+      if (selectedTest) return <TestDetailPage />;
+      if (selectedPrescription) return <PrescriptionDetailPage />;
+      if (selectedVisit) return <HospitalVisitDetailPage />;
+
+      switch (medicalFileSubPage) {
+        case 'overview':
+          return (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">🧬 My Medical File</h2>
+              <input 
+                type="text" 
+                placeholder="Search tests, doctors, medicines..."
+                className="w-full border-2 border-gray-300 rounded-xl p-4 mb-6 focus:border-green-500 outline-none"
+              />
+              <div className="space-y-4 mb-6">
+                <div onClick={() => setMedicalFileSubPage('tests')} className="bg-white rounded-2xl p-5 shadow-md flex items-center justify-between cursor-pointer hover:bg-gray-50 transition">
+                  <span className="font-bold text-gray-800">Medical Tests 🧪</span>
+                  <i className="fas fa-chevron-right text-gray-400"></i>
+                </div>
+                <div onClick={() => setMedicalFileSubPage('prescriptions')} className="bg-white rounded-2xl p-5 shadow-md flex items-center justify-between cursor-pointer hover:bg-gray-50 transition">
+                  <span className="font-bold text-gray-800">Prescriptions 💊</span>
+                  <i className="fas fa-chevron-right text-gray-400"></i>
+                </div>
+                <div onClick={() => setMedicalFileSubPage('hospitalHistory')} className="bg-white rounded-2xl p-5 shadow-md flex items-center justify-between cursor-pointer hover:bg-gray-50 transition">
+                  <span className="font-bold text-gray-800">Hospital History 🏥</span>
+                  <i className="fas fa-chevron-right text-gray-400"></i>
+                </div>
+              </div>
+              <button 
+                onClick={() => setMedicalFileSubPage('addData')}
+                className="w-full bg-blue-500 text-white py-4 rounded-xl font-semibold hover:bg-blue-600 transition shadow-lg mb-4"
+              >
+                <i className="fas fa-plus mr-2"></i>Add to My Data
+              </button>
+              <button className="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition shadow-lg mb-4">
+                <i className="fas fa-download mr-2"></i>Download All Records
+              </button>
+              <p className="text-sm text-gray-500 text-center">Last Synced: 2025-10-24</p>
+            </div>
+          );
+        case 'tests':
+          return <MedicalTestsSection />;
+        case 'prescriptions':
+          return <PrescriptionsSection />;
+        case 'hospitalHistory':
+          return <HospitalHistorySection />;
+        case 'addData':
+          return <AddDataPage />;
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {renderSubPage()}
+      </div>
+    );
+  };
+
+  // Dashboard Home (New Version)
+  const DashboardHome = () => (
+    <div className="pb-24 min-h-screen bg-gradient-to-b from-green-50 to-white">
+      <div className="bg-gradient-to-r from-green-500 to-teal-500 text-white p-6 rounded-b-3xl flex items-center justify-between shadow-md">
+        <div className="flex items-center">
+          <img src="Gemini_Generated_Image_mn6rrkmn6rrkmn6r.png" alt="Mediband Logo" className="w-10 h-10 mr-3" />
+          <div>
+            <h2 className="text-2xl font-bold mb-1">Mediband</h2>
+            <p className="text-green-100 text-sm">Your health, always accessible.</p>
+          </div>
+        </div>
+        <button className="text-white text-lg hover:text-green-100 transition">
+          <i className="fas fa-bell"></i>
+        </button>
+      </div>
+
+      <div className="p-6 -mt-6">
+        <div className="grid grid-cols-1 gap-4 mb-6">
+          <button 
+            onClick={() => setCurrentScreen('emergencyAccess')}
+            className="w-full bg-red-500 text-white py-4 rounded-xl font-semibold hover:bg-red-600 transition shadow-lg flex items-center justify-center transform hover:scale-105"
+          >
+            <i className="fas fa-exclamation-triangle mr-3 text-xl"></i>
+            Emergency Access
+          </button>
+          <button 
+            onClick={() => { setCurrentScreen('myMedicalFile'); setMedicalFileSubPage('overview'); }}
+            className="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition shadow-lg flex items-center justify-center transform hover:scale-105"
+          >
+            <i className="fas fa-file-medical-alt mr-3 text-xl"></i>
+            My Medical File
+          </button>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 border border-gray-100">
+          <h3 className="font-bold text-gray-800 text-lg mb-4 flex items-center">
+            <i className="fas fa-user-circle mr-3 text-green-500"></i>
+            Personal Summary
+          </h3>
+          <div className="text-gray-700 space-y-2 text-sm">
+            <p><strong>Name:</strong> John Doe</p>
+            <p><strong>Age:</strong> 30</p>
+            <p><strong>Blood Type:</strong> A+</p>
+            <p><strong>Allergies:</strong> Penicillin</p>
+            <p><strong>Chronic Diseases:</strong> Asthma</p>
+            <p className="text-gray-500 text-xs mt-2">Last Updated: 2025-10-24</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-lg flex items-center justify-between border border-gray-100">
+          <span className="text-gray-700 font-semibold flex items-center">
+            <i className="fas fa-shield-alt mr-3 text-green-500"></i>
+            Allow emergency data access
+          </span>
+          <label className="switch">
+            <input 
+              type="checkbox" 
+              checked={allowEmergencyAccess} 
+              onChange={() => setAllowEmergencyAccess(!allowEmergencyAccess)} 
+            />
+            <span className="slider round"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Data Visualization (Existing, will be accessible via bottom nav)
+  const DataVisualization = () => (
+    <div className="pb-24">
+      <div className="bg-white p-6 border-b">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Health Trends</h2>
+      
+        <div className="flex gap-2 mb-4">
+          {['week', 'month', 'year'].map(view => (
+            <button
+              key={view}
+              onClick={() => setDataView(view)}
+              className={`px-4 py-2 rounded-lg font-semibold capitalize transition ${
+                dataView === view 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {view}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto">
+          {[
+            { id: 'heart', label: 'Heart Rate', icon: 'fa-heartbeat' },
+            { id: 'sleep', label: 'Sleep', icon: 'fa-moon' },
+            { id: 'activity', label: 'Activity', icon: 'fa-running' },
+            { id: 'stress', label: 'Stress', icon: 'fa-brain' }
+          ].map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setDataCategory(cat.id)}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition ${
+                dataCategory === cat.id 
+                  ? 'bg-teal-400 text-white' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <i className={`fas ${cat.icon} mr-2`}></i>
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-6">
+        <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
+          <h3 className="font-bold text-gray-800 mb-4 capitalize">{dataCategory} - {dataView}</h3>
+          <div className="h-48 bg-gradient-to-t from-blue-50 to-transparent rounded-xl flex items-end justify-around p-4">
+            {[65, 80, 72, 85, 78, 88, 75].map((height, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <div 
+                  style={{ height: `${height}%` }}
+                  className="w-8 bg-gradient-to-t from-blue-500 to-teal-400 rounded-t-lg transition-all hover:opacity-80"
+                ></div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-blue-50 rounded-2xl p-5">
+          <div className="flex items-start">
+            <i className="fas fa-chart-line text-blue-500 text-xl mr-3 mt-1"></i>
+            <div>
+              <h4 className="font-semibold text-gray-800 mb-1">Insight</h4>
+              <p className="text-sm text-gray-600">Your stress levels are improving by 15% this month! Keep up the great work.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Shop Tab (New Version)
+  const ShopTab = () => {
+    const braceletOptions = {
+      green: { image: "https://placehold.co/150x150/00B050/white?text=Green", price: "$29.99" },
+      blue: { image: "https://placehold.co/150x150/0070C0/white?text=Blue", price: "$29.99" },
+      red: { image: "https://placehold.co/150x150/FF0000/white?text=Red", price: "$29.99" },
+      black: { image: "https://placehold.co/150x150/000000/white?text=Black", price: "$29.99" },
+    };
+
+    const generateMedibandCode = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = 'MEDI-';
+      for (let i = 0; i < 7; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+
+    const handleBuyNow = () => {
+      setShopScreen('payment');
+    };
+
+    const handlePaymentConfirmation = () => {
+      setMedibandCode(generateMedibandCode());
+      setShopScreen('confirmation');
+    };
+
+    const handleUploadData = () => {
+      setCurrentScreen('myMedicalFile');
+      setMedicalFileSubPage('overview');
+      setShopScreen('selection'); // Reset shop screen for next time
+    };
+
+    const renderShopContent = () => {
+      switch (shopScreen) {
+        case 'selection':
+          return (
+            <>
+              <div className="bg-gradient-to-r from-green-500 to-teal-400 text-white p-6 rounded-b-3xl">
+                <img src="Gemini_Generated_Image_mn6rrkmn6rrkmn6r.png" alt="Mediband Logo" className="w-10 h-10 mb-2" />
+                <h2 className="text-2xl font-bold">Stay Safe. Stay Connected.</h2>
+                <p className="text-green-100">Your Health, One Tap Away.</p>
+              </div>
+
+              <div className="p-6">
+                <div className="flex justify-around mb-6 bg-gray-100 rounded-xl p-1">
+                  {Object.keys(braceletOptions).map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedBraceletColor(color)}
+                      className={`flex-1 py-2 rounded-lg font-semibold capitalize transition ${
+                        selectedBraceletColor === color
+                          ? 'bg-white text-green-700 shadow'
+                          : 'text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="text-center mb-8">
+                  <img 
+                    src={braceletOptions[selectedBraceletColor].image} 
+                    alt={`${selectedBraceletColor} Mediband`} 
+                    className="mx-auto w-48 h-48 object-contain mb-4" 
+                  />
+                  <p className="text-3xl font-bold text-green-700 mb-2">{braceletOptions[selectedBraceletColor].price}</p>
+                  <button 
+                    onClick={handleBuyNow}
+                    className="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition shadow-lg"
+                  >
+                    Buy Now
+                  </button>
+                </div>
+              </div>
+            </>
+          );
+        case 'payment':
+          return (
+            <div className="min-h-screen bg-gray-50 p-6">
+              <button onClick={() => setShopScreen('selection')} className="text-green-500 mb-6">
+                <i className="fas fa-arrow-left mr-2"></i>Back to Selection
+              </button>
+              <div className="max-w-md mx-auto mt-12">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Secure Payment</h2>
+              
+                <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
+                  <h3 className="font-bold text-gray-800 mb-4">Choose Payment Method</h3>
+                  <div className="space-y-4">
+                    <label className="flex items-center bg-gray-50 p-4 rounded-xl cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="payment" 
+                        value="card" 
+                        checked={paymentOption === 'card'} 
+                        onChange={() => setPaymentOption('card')}
+                        className="form-radio h-5 w-5 text-green-600"
+                      />
+                      <span className="ml-3 text-gray-700 font-semibold">Pay by Card (Credit/Debit)</span>
+                    </label>
+                    <label className="flex items-center bg-gray-50 p-4 rounded-xl cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="payment" 
+                        value="delivery" 
+                        checked={paymentOption === 'delivery'} 
+                        onChange={() => setPaymentOption('delivery')}
+                        className="form-radio h-5 w-5 text-green-600"
+                      />
+                      <span className="ml-3 text-gray-700 font-semibold">Pay on Delivery</span>
+                    </label>
+                  </div>
+                </div>
+
+                {paymentOption === 'card' && (
+                  <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
+                    <h3 className="font-bold text-gray-800 mb-4">Card Details</h3>
+                    <input type="text" placeholder="Card Number" className="w-full border-2 border-gray-300 rounded-xl p-3 mb-3 focus:border-green-500 outline-none" />
+                    <div className="flex gap-3 mb-3">
+                      <input type="text" placeholder="MM/YY" className="flex-1 border-2 border-gray-300 rounded-xl p-3 focus:border-green-500 outline-none" />
+                      <input type="text" placeholder="CVC" className="flex-1 border-2 border-gray-300 rounded-xl p-3 focus:border-green-500 outline-none" />
+                    </div>
+                    <input type="text" placeholder="Cardholder Name" className="w-full border-2 border-gray-300 rounded-xl p-3 focus:border-green-500 outline-none" />
+                  </div>
+                )}
+
+                <button 
+                  onClick={handlePaymentConfirmation}
+                  className="w-full bg-green-500 text-white py-4 rounded-xl font-semibold hover:bg-green-600 transition shadow-lg"
+                >
+                  Confirm Payment
+                </button>
+              </div>
+            </div>
+          );
+        case 'confirmation':
+          return (
+            <div className="min-h-screen bg-green-50 p-6 flex flex-col items-center justify-center text-center">
+              <button onClick={() => setShopScreen('payment')} className="text-green-500 mb-6 absolute top-6 left-6">
+                <i className="fas fa-arrow-left mr-2"></i>Back to Payment
+              </button>
+              <div className="w-24 h-24 bg-green-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+                <i className="fas fa-check-circle text-green-500 text-5xl"></i>
+              </div>
+              <h2 className="text-3xl font-bold text-gray-800 mb-4">Payment Successful!</h2>
+              <p className="text-gray-600 mb-6">Your Mediband is being prepared.</p>
+            
+              <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
+                <p className="text-gray-700 font-semibold mb-2">Your Unique Mediband Code:</p>
+                <p className="text-green-600 text-2xl font-bold tracking-wide">{medibandCode}</p>
+                <p className="text-sm text-gray-500 mt-2">This code will be printed on your bracelet.</p>
+              </div>
+
+              <button 
+                onClick={handleUploadData}
+                className="w-full max-w-sm bg-blue-500 text-white py-4 rounded-xl font-semibold hover:bg-blue-600 transition shadow-lg"
+              >
+                <i className="fas fa-upload mr-2"></i>Upload My Data
+              </button>
+            </div>
+          );
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <div className="pb-24 min-h-screen bg-gray-50">
+        {renderShopContent()}
+      </div>
+    );
+  };
+
+  // Info Tab (Existing, will be accessible via bottom nav)
+  const InfoTab = () => (
+    <div className="pb-24">
+      <div className="bg-white p-6 border-b">
+        <h2 className="text-2xl font-bold text-gray-800">Learn More</h2>
+      </div>
+
+      <div className="p-6 space-y-4">
+        <div className="bg-white rounded-2xl p-5 shadow-md">
+          <div className="flex items-center mb-3">
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
+              <i className="fas fa-info-circle text-blue-500 text-xl"></i>
+            </div>
+            <h3 className="font-bold text-gray-800">How It Works</h3>
+          </div>
+          <p className="text-sm text-gray-600">Mediband uses advanced biosensors to monitor your heart rate, sleep patterns, activity levels, and stress indicators in real-time.</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-md">
+          <div className="flex items-center mb-3">
+            <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center mr-4">
+              <i className="fas fa-shield-alt text-teal-500 text-xl"></i>
+            </div>
+            <h3 className="font-bold text-gray-800">Privacy & Security</h3>
+          </div>
+          <p className="text-sm text-gray-600">Your health data is encrypted end-to-end and stored securely. We never share your personal information with third parties.</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-md">
+          <div className="flex items-center mb-3">
+            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mr-4">
+              <i className="fas fa-question-circle text-purple-500 text-xl"></i>
+            </div>
+            <h3 className="font-bold text-gray-800">FAQs</h3>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div>
+              <p className="font-semibold text-gray-800">How long does the battery last?</p>
+              <p className="text-gray-600">5-7 days depending on usage and model.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-800">Is it waterproof?</p>
+              <p className="text-gray-600">Yes, water-resistant up to 50 meters.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-800">Can I sync with other apps?</p>
+              <p className="text-gray-600">Yes, compatible with Apple Health and Google Fit.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Settings Tab (Existing, will be accessible via bottom nav)
+  const SettingsTab = () => (
+    <div className="pb-24">
+      <div className="bg-gradient-to-r from-blue-500 to-teal-400 text-white p-6 rounded-b-3xl">
+        <div className="flex items-center">
+          <div className="w-20 h-20 bg-white rounded-full mr-4 flex items-center justify-center">
+            <i className="fas fa-user text-blue-500 text-3xl"></i>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold">{isLoggedIn ? 'John Doe' : 'Guest User'}</h2>
+            <p className="text-blue-100">{isLoggedIn ? 'john.doe@email.com' : 'Limited access'}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-4">
+        <div className="bg-white rounded-2xl p-5 shadow-md">
+          <h3 className="font-bold text-gray-800 mb-3">Connected Devices</h3>
+          {braceletConnected ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <i className="fas fa-check-circle text-green-500 mr-3"></i>
+                <span className="text-gray-700">Mediband Pro</span>
+              </div>
+              <span className="text-sm text-gray-500">Connected</span>
+            </div>
+          ) : (
+            <p className="text-gray-600 text-sm">No devices connected</p>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-md space-y-3">
+          <button className="w-full flex items-center justify-between py-2">
+            <span className="text-gray-700"><i className="fas fa-bell mr-3 text-blue-500"></i>Notifications</span>
+            <i className="fas fa-chevron-right text-gray-400"></i>
+          </button>
+          <button className="w-full flex items-center justify-between py-2">
+            <span className="text-gray-700"><i className="fas fa-cog mr-3 text-blue-500"></i>Settings</span>
+            <i className="fas fa-chevron-right text-gray-400"></i>
+          </button>
+          <button className="w-full flex items-center justify-between py-2">
+            <span className="text-gray-700"><i className="fas fa-lock mr-3 text-blue-500"></i>Privacy</span>
+            <i className="fas fa-chevron-right text-gray-400"></i>
+          </button>
+        </div>
+
+        <button 
+          onClick={() => { setIsLoggedIn(false); setBraceletConnected(false); setCurrentScreen('welcome'); }}
+          className="w-full bg-red-500 text-white py-4 rounded-xl font-semibold hover:bg-red-600 transition"
+        >
+          <i className="fas fa-sign-out-alt mr-2"></i>
+          {isLoggedIn ? 'Log Out' : 'Return to Welcome'}
+        </button>
+      </div>
+    </div>
+  );
+
+  // Bottom Navigation
+  const BottomNav = () => (
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-around items-center shadow-lg">
+      {[
+        { id: 'home', icon: 'fa-home', label: 'Home' },
+        { id: 'myFile', icon: 'fa-file-alt', label: 'My File' },
+        { id: 'getBracelet', icon: 'fa-shopping-bag', label: 'Get Bracelet' },
+        { id: 'settings', icon: 'fa-cog', label: 'Settings' },
+        { id: 'info', icon: 'fa-info-circle', label: 'Info' }
+      ].map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => {
+            if (tab.id === 'getBracelet') {
+              setCurrentScreen('dashboard'); 
+              setActiveTab('shop'); // 'shop' is the existing component for buying bracelets
+            } else if (tab.id === 'myFile') {
+              setCurrentScreen('myMedicalFile');
+              setMedicalFileSubPage('overview'); // Reset to overview when navigating to My File
+            } else if (tab.id === 'settings') {
+              setCurrentScreen('dashboard'); 
+              setActiveTab('profile'); // 'profile' is the existing component for settings
+            } else {
+              setCurrentScreen('dashboard');
+              setActiveTab(tab.id);
+            }
+          }}
+          className={`flex flex-col items-center transition ${
+            (activeTab === tab.id && currentScreen === 'dashboard') || 
+            (tab.id === 'myFile' && currentScreen === 'myMedicalFile') || 
+            (tab.id === 'getBracelet' && activeTab === 'shop') || 
+            (tab.id === 'settings' && activeTab === 'profile')
+              ? 'text-green-500' 
+              : 'text-gray-400'
+          }`}
+        >
+          <i className={`fas ${tab.icon} text-xl mb-1`}></i>
+          <span className="text-xs">{tab.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="max-w-md mx-auto bg-gray-50 min-h-screen relative">
+      {currentScreen === 'welcome' && <WelcomeScreen />}
+      {currentScreen === 'activation' && <ActivationScreen />}
+      {currentScreen === 'assignPersonalInfo' && <AssignPersonalInfoScreen />} {/* New screen */}
+      {currentScreen === 'emergencyAccess' && <EmergencyAccessPage />}
+      {currentScreen === 'myMedicalFile' && <MyMedicalFilePage />}
+      {currentScreen === 'dashboard' && (
+        <>
+          {activeTab === 'home' && <DashboardHome />}
+          {activeTab === 'data' && <DataVisualization />}
+          {activeTab === 'shop' && <ShopTab />}
+          {activeTab === 'info' && <InfoTab />}
+          {activeTab === 'profile' && <SettingsTab />}
+          <BottomNav />
+        </>
+      )}
+    </div>
+  );
+}
